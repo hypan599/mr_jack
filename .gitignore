@@ -1,3 +1,7 @@
 pyenv/*
 jack_Board.psd
 .idea/*
+log.txt
+__pycache__/
+game_manual/*
+jack_image/*
