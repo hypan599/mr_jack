@@ -1,7 +1,15 @@
+# python env
 pyenv/*
-jack_Board.psd
-.idea/*
-log.txt
+
+# python cache
 __pycache__/
+
+
+# IDEs
+.idea/*
+
+# Other files
+jack_Board.psd
+log.txt
 game_manual/*
 jack_image/*
