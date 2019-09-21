@@ -8,8 +8,11 @@ __pycache__/
 # IDEs
 .idea/*
 
-# Other files
+# Static files
+msyh.ttf
 jack_Board.psd
 log.txt
 game_manual/*
 jack_image/*
+pocket/images/*
+london/images/*

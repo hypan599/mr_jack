@@ -2,7 +2,7 @@
 """
 check the intergrity of files
 check os
-load image path and log
+load images path and log
 """
 
 # todo: check os

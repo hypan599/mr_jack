@@ -199,9 +199,9 @@ def draw_board():
                 screen.blit(detective_available, selected_detective.get_location(1))
                 screen.blit(detective_available, selected_detective.get_location(2))
                 
-            if selected_map:  # map selected image
+            if selected_map:  # map selected images
                 screen.blit(map_used, selected_map.get_location())
-            if exchange_selected_a and not exchanged:  # exchange highlight image
+            if exchange_selected_a and not exchanged:  # exchange highlight images
                 screen.blit(map_used, exchange_selected_a.get_location())
             if select_all_detective:
                 for d in detective_list:
