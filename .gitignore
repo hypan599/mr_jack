@@ -1,9 +1,6 @@
-# python env
+# python
 pyenv/*
-
-# python cache
 __pycache__/
-
 
 # IDEs
 .idea/*

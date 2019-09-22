@@ -9,9 +9,11 @@ from image import *
 log_file = "log.txt"
 # direction : u, r, d, l = 0, 1, 2, 3
 # suspect: True, False = 1, 0
-# todo: select all detective 时候的两个侦探挨着的问题
+# todo: select all detectives 时候的两个侦探挨着的问题
 
 f = open(log_file, "w")
+
+
 class Map:
     def __init__(self, name, chinese_name, hourglass_num):
         global person_list
@@ -125,7 +127,7 @@ class ActionCards:
 
 def draw_board():
     pygame.draw.rect(screen, black, (0, 0, 1560, 920))
-    
+
     if winner:
         screen.blit(font.render(u"杰克" if winner == "j" else u"侦探" + u"胜利！抓住了：" + jack.chinese_name,
                                 True, white, (0, 0)), (1080, 50))
@@ -198,8 +200,8 @@ def draw_board():
             if select_detective:
                 screen.blit(detective_available, selected_detective.get_location(1))
                 screen.blit(detective_available, selected_detective.get_location(2))
-                
-            if selected_map:  # map selected images
+
+            if selected_map:  # tiles selected images
                 screen.blit(map_used, selected_map.get_location())
             if exchange_selected_a and not exchanged:  # exchange highlight images
                 screen.blit(map_used, exchange_selected_a.get_location())
@@ -211,8 +213,8 @@ def draw_board():
         # live witness
         for i, p in enumerate(person_list):
             screen.blit(
-                pygame.font.Font("msyh.ttf", 20).render(p.chinese_name + (u"  ：可见" if p.seen else u"  :不可见"), True,
-                                                        white, (0, 0)), (1080, 500 + i * 30))
+                    pygame.font.Font("msyh.ttf", 20).render(p.chinese_name + (u"  ：可见" if p.seen else u"  :不可见"), True,
+                                                            white, (0, 0)), (1080, 500 + i * 30))
 
     elif debugging:  # saved for debug
         print("hh")
@@ -237,18 +239,18 @@ def draw_board():
     else:  # acting
         if mouse_place == "button":  # soecial case for different phrase
             screen.blit(button_mouse_on, obj.pos)
-        if select_detective and mouse_place == "detective" and selected_detective.can_reach(obj):
+        if select_detective and mouse_place == "detectives" and selected_detective.can_reach(obj):
             screen.blit(detective_mouse_on, selected_detective.get_location(obj - selected_detective.location))
-        if rotate_map and mouse_place == "map" and not selected_map:
+        if rotate_map and mouse_place == "tiles" and not selected_map:
             screen.blit(map_mouse_on, obj.get_location())
-        elif rotate_map and mouse_place == "map" and selected_map and obj == selected_map:
+        elif rotate_map and mouse_place == "tiles" and selected_map and obj == selected_map:
             screen.blit(map_mouse_on, obj.get_location())
-        if exchange_map and mouse_place == "map" and not exchanged:
+        if exchange_map and mouse_place == "tiles" and not exchanged:
             if exchange_selected_a and not obj == exchange_selected_a:
                 screen.blit(map_mouse_on, obj.get_location())
             elif not exchange_selected_a:
                 screen.blit(map_mouse_on, obj.get_location())
-        if select_all_detective and mouse_place == "detective":
+        if select_all_detective and mouse_place == "detectives":
             for d in detective_list:
                 if obj == d.location:
                     screen.blit(detective_mouse_on, d.get_location())
@@ -271,56 +273,56 @@ def where_mouse(mouse):
     else:  # board area
         if mouse[0] < 100:
             if 170 < mouse[1] < 270:
-                return "detective", 11
+                return "detectives", 11
             elif 410 < mouse[1] < 510:
-                return "detective", 10
+                return "detectives", 10
             elif 650 < mouse[1] < 750:
-                return "detective", 9
+                return "detectives", 9
             else:
                 return "invalid", 0
         elif mouse[0] > 820:
             if 170 < mouse[1] < 270:
-                return "detective", 3
+                return "detectives", 3
             elif 410 < mouse[1] < 510:
-                return "detective", 4
+                return "detectives", 4
             elif 650 < mouse[1] < 750:
-                return "detective", 5
+                return "detectives", 5
             else:
                 return "invalid", 0
         elif mouse[1] < 100:
             if 170 < mouse[0] < 270:
-                return "detective", 0
+                return "detectives", 0
             elif 410 < mouse[0] < 510:
-                return "detective", 1
+                return "detectives", 1
             elif 650 < mouse[0] < 750:
-                return "detective", 2
+                return "detectives", 2
             else:
                 return "invalid", 0
         elif mouse[1] > 820:
             if 170 < mouse[0] < 270:
-                return "detective", 8
+                return "detectives", 8
             elif 410 < mouse[0] < 510:
-                return "detective", 7
+                return "detectives", 7
             elif 650 < mouse[0] < 750:
-                return "detective", 6
+                return "detectives", 6
             else:
                 return "invalid", 0
-        else:  # map area
+        else:  # tiles area
             x = (mouse[0] - 100) // 240
             y = (mouse[1] - 100) // 240
             for p in person_list:
                 if p.pos == (x, y):
-                    return "map", p
+                    return "tiles", p
             return "invalid", 0
 
 
-def test_draw(p):
-    states = [str(1) + str(i) for i in range(4)]
-    locs = [(i, j) for i in range(3) for j in range(3)]
-    locs.pop()
-    for s, l in zip(states, locs):
-        # print(p.name+s)
-        screen.blit(image_dict[p.name][p.name + s], map_loc2pos(l))
+# def test_draw(p):
+#     states = [str(1) + str(i) for i in range(4)]
+#     locs = [(i, j) for i in range(3) for j in range(3)]
+#     locs.pop()
+#     for s, l in zip(states, locs):
+#         # print(p.name+s)
+#         screen.blit(image_dict[p.name][p.name + s], map_loc2pos(l))
 
 
 def update_action(t):
@@ -353,20 +355,21 @@ def update_witness():
             if p.pos == (x, y):
                 return p
         return None
+
     for p in person_list:
         p.seen = 0
     global jack_state
     wit_dict = {
-        0: (0, 1, 2, -2),
-        1: (3, 4, 5, -2),
-        2: (6, 7, 8, -2),
-        3: (6, 3, 0, -3),
-        4: (7, 4, 1, -3),
-        5: (8, 5, 2, -3),
-        6: (8, 7, 6, 0),
-        7: (5, 4, 3, 0),
-        8: (2, 1, 0, 0),
-        9: (2, 5, 8, -1),
+        0:  (0, 1, 2, -2),
+        1:  (3, 4, 5, -2),
+        2:  (6, 7, 8, -2),
+        3:  (6, 3, 0, -3),
+        4:  (7, 4, 1, -3),
+        5:  (8, 5, 2, -3),
+        6:  (8, 7, 6, 0),
+        7:  (5, 4, 3, 0),
+        8:  (2, 1, 0, 0),
+        9:  (2, 5, 8, -1),
         10: (1, 4, 7, -1),
         11: (0, 3, 6, -1)
     }
@@ -462,9 +465,9 @@ yuanshanheye = Map("yuanshanheye", u"远山和叶", 1)
 lingmuyuanzi = Map("lingmuyuanzi", u"铃木园子", 1)
 
 detective_list = []
-kenan = Detective("kenan", u"江户川柯南", 11)
-maolixiaowulang = Detective("maolixiaowulang", u"毛利小五郎", 7)
-fubupingci = Detective("fubupingci", u"服部平次", 3)
+kenan =             Detective("kenan", u"江户川柯南", 11)
+maolixiaowulang =   Detective("maolixiaowulang", u"毛利小五郎", 7)
+fubupingci =        Detective("fubupingci", u"服部平次", 3)
 
 button_list = []
 start = Button("start", u"开始", (1060, 0))
@@ -576,11 +579,11 @@ JACKWIN = pygame.USEREVENT + 6
 DETECTIVEWIN = pygame.USEREVENT + 7
 
 mouse_event_dict = {
-    "start": pygame.event.Event(START),
+    "start":  pygame.event.Event(START),
     "cancel": pygame.event.Event(CANCEL),
-    "quit": pygame.event.Event(pygame.QUIT),
-    "over": pygame.event.Event(OVER),
-    "ok": pygame.event.Event(OK)
+    "quit":   pygame.event.Event(pygame.QUIT),
+    "over":   pygame.event.Event(OVER),
+    "ok":     pygame.event.Event(OK)
 }
 
 while True:
@@ -660,7 +663,7 @@ while True:
                     acting = False
                     game_processing = True
                     original = None
-                    f.write("move" + selected_detective.name + "done2" + '\n')
+                    # f.write("move" + selected_detective.name + "done2" + '\n')
                 if rotate_map:
                     actioncard_list[int(card_using[0]) - 1].used = True
                     rotate_map = False
@@ -734,18 +737,18 @@ while True:
 
                 # three detectives
                 if select_detective:
-                    if mouse_place == "detective" and selected_detective.can_reach(obj):
+                    if mouse_place == "detectives" and selected_detective.can_reach(obj):
                         original = selected_detective.location
                         selected_detective.location = obj
                         select_detective = False
-                if rotate_map and mouse_place == "map":
+                if rotate_map and mouse_place == "tiles":
                     if not selected_map:
                         selected_map = obj
                         original = obj.direction + 1
                         obj.rotate()
                     elif selected_map and obj == selected_map:
                         obj.rotate()
-                if exchange_map and mouse_place == "map":
+                if exchange_map and mouse_place == "tiles":
                     if not exchange_selected_a:
                         exchange_selected_a = obj
                         original = obj.pos
@@ -756,7 +759,7 @@ while True:
                         exchange_selected_a.pos = exchange_selected_b.pos
                         exchange_selected_b.pos = temp
                         exchanged = True
-                if select_all_detective and mouse_place == "detective":
+                if select_all_detective and mouse_place == "detectives":
                     all_back = False
                     one_forward = False
                     for d in detective_list:

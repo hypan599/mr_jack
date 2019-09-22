@@ -20,6 +20,8 @@ Under maintenance, not available now.
 
 Game is developed and tested on Windows. Due to compatibility issue, `pygame` may bot work on OS Mojave.
 
+The game window dimension is et to be 1560 * 920, please make sure your screen resolution is big enough.
+
 ### Dependencies
 
 - `pygame`

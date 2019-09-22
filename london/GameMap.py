@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
 """
-this file defines the map and parameters of the map
-in case there is some change of the map modify this file is ok
+this file defines the tiles and parameters of the tiles
+in case there is some change of the tiles modify this file is ok
 """

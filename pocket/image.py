@@ -20,7 +20,7 @@ button_mouse_on = pygame.image.load(root_path + "button_mouse_on.PNG").convert_a
 
 
 
-map_path = root_path + "map" + os.sep
+map_path = root_path + "tiles" + os.sep
 image_dict = {'guaidaojide': {},
               'maolilan': {},
               'huiyuanai': {},
@@ -39,10 +39,10 @@ for name, d in image_dict.items():
 map_mouse_on = pygame.image.load(map_path + "map_mouse_on.PNG").convert_alpha()
 map_used = pygame.image.load(map_path + "map_used.PNG").convert_alpha()
 
-detective_path = root_path + "detective" + os.sep
-detective_images = {"kenan": pygame.image.load("images/detective/kenan.PNG").convert_alpha(),
-                    "maolixiaowulang": pygame.image.load("images/detective/maolixiaowulang.PNG").convert_alpha(),
-                    "fubupingci": pygame.image.load("images/detective/fubupingci.PNG").convert_alpha()
+detective_path = root_path + "detectives" + os.sep
+detective_images = {"kenan": pygame.image.load("images/detectives/detective2.PNG").convert_alpha(),
+                    "maolixiaowulang": pygame.image.load("images/detectives/detective3.PNG").convert_alpha(),
+                    "fubupingci": pygame.image.load("images/detectives/detective1.PNG").convert_alpha()
                     }
 detective_mouse_on = pygame.image.load(detective_path + "detective_mouse_on.PNG").convert_alpha()
 detective_available = pygame.image.load(detective_path + "detective_available.PNG").convert_alpha()
