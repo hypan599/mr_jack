@@ -47,16 +47,16 @@ detective_images = {"kenan": pygame.image.load("images/detectives/detective2.PNG
 detective_mouse_on = pygame.image.load(detective_path + "detective_mouse_on.PNG").convert_alpha()
 detective_available = pygame.image.load(detective_path + "detective_available.PNG").convert_alpha()
 
-action_card_path = root_path + "action" + os.sep
+action_card_path = root_path + "actions" + os.sep
 action_card_images = {
-    "1f": pygame.image.load("images/action/1f.PNG").convert_alpha(),
-    "1b": pygame.image.load("images/action/1b.PNG").convert_alpha(),
-    "2f": pygame.image.load("images/action/2f.PNG").convert_alpha(),
-    "2b": pygame.image.load("images/action/2b.PNG").convert_alpha(),
-    "3f": pygame.image.load("images/action/3f.PNG").convert_alpha(),
-    "3b": pygame.image.load("images/action/3b.PNG").convert_alpha(),
-    "4f": pygame.image.load("images/action/4f.PNG").convert_alpha(),
-    "4b": pygame.image.load("images/action/4b.PNG").convert_alpha()
+    "1f": pygame.image.load("images/actions/1f.PNG").convert_alpha(),
+    "1b": pygame.image.load("images/actions/1b.PNG").convert_alpha(),
+    "2f": pygame.image.load("images/actions/2f.PNG").convert_alpha(),
+    "2b": pygame.image.load("images/actions/2b.PNG").convert_alpha(),
+    "3f": pygame.image.load("images/actions/3f.PNG").convert_alpha(),
+    "3b": pygame.image.load("images/actions/3b.PNG").convert_alpha(),
+    "4f": pygame.image.load("images/actions/4f.PNG").convert_alpha(),
+    "4b": pygame.image.load("images/actions/4b.PNG").convert_alpha()
 }
 action_mouse_on = pygame.image.load(action_card_path + "action_mouse_on.PNG").convert_alpha()
 action_used = pygame.image.load(action_card_path + "action_used.PNG").convert_alpha()
