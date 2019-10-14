@@ -7,33 +7,18 @@ from operator import xor
 import constants
 
 
-class Tile:
-    def __init__(self, name, display_name, hourglass_num, image):
+# todo: use pythonic getter and setter
+
+
+class Token:
+    def __init__(self, name, display_name, image, location=None):
         self.name = name
         self.display_name = display_name
-        self.hourglass_num = hourglass_num
-        self.direction = 0
-        self.location = 0, 0
-        self.head = True  # false for tail
-
-        self.suspect = 1
-        self.is_seen = 0
-
-        # todo: seems better to do this using picture rotation?
-        # todo: add a tail picture for all tile
-        self.image = pygame.image.load(image).convert()
+        self.image = image
+        self.location = location
 
     def __str__(self):
-        return "Tile: " + self.name
-
-    def rotate(self, direction=0):
-        if direction:
-            self.direction = direction
-        else:
-            self.direction = (self.direction + 1) % 4
-
-    def set_direction(self, direction):
-        self.direction = direction
+        return "Token: " + self.name
 
     def set_location(self, location):
         self.location = location
@@ -41,20 +26,59 @@ class Tile:
     def get_location(self):
         return self.location
 
-    def mark_suspect(self, susp):
+
+class Tile(Token):
+    def __init__(self, name, display_name, hourglass_num, image):
+        super(Tile, self).__init__(name, display_name, None, (0, 0))
+        self.hourglass_num = hourglass_num
+        self.direction = 0
+        self.head = True  # false for tail
+        self.suspect = 1
+        self.is_seen = 0
+        self.images = [pygame.image.load(image[0]).convert(), pygame.image.load(image[1]).convert()]
+        self.update_image()
+        # todo: seems better to do this using picture rotation?
+
+    def __str__(self):
+        return "Tile: " + super(Tile, self).__str__()
+
+    def set_location(self, location):
+        super(Tile, self).set_location(location)
+
+    def get_location(self):
+        return super(Tile, self).get_location()
+
+    def rotate(self, direction=0):
+        if direction:
+            self.direction = direction
+        else:
+            self.direction = (self.direction + 1) % 4
+        self.update_image()
+
+    def update_image(self):
+        self.image = self.images[int(self.head)]
+
+    def set_direction(self, direction):
+        self.direction = direction
+
+    def mark_suspect(self, susp):  # todo: not so clear here
         self.suspect = susp
 
+    def flip(self):
+        self.head = not self.head
+        self.update_image()
 
-class Detective:
+
+class Detective(Token):
     def __init__(self, name, display_name, location, image):
-        self.name = name
-        self.display_name = display_name
+        super(Detective, self).__init__(name, display_name, pygame.image.load(image).convert_alpha(), location)
         self.init_location = location
-        self.location = location
-        self.image = pygame.image.load(image).convert_alpha()
+
+    def set_location(self, location):
+        super(Detective, self).set_location(location)
 
     def get_location(self, bias=0):
-        return (self.location + bias) % 12
+        return (super(Detective, self).get_location() + bias) % 12
 
     def can_reach(self, loc, view_range=2):
         if loc < self.location:
@@ -66,118 +90,124 @@ class Detective:
 
 
 # todo: make general buttons and change based on game status
-class Button:
-    def __init__(self, name, display_name, location, callback, disabled):
-        self.name = name
-        self.display_name = display_name
-        self.location = location
+class Button(Token):
+    def __init__(self, name, display_name, callback, size=(100, 50)):
+        super(Button, self).__init__(name, display_name, None, 0)
         self.callback = callback
-        self.disabled = disabled
+        self.size = size
 
-
-class ActionCards:
-    def __init__(self, name, location):
-        self.name = name
-        self.used = False
-        self.side = True
-        self.location = location
-        self.image = [0, 1]
-
-    # def get_image(self):
-    #     if self.side:
-    #         return action_card_images[self.name[-1] + "f"]
-    #     else:
-    #         return action_card_images[self.name[-1] + "b"]
-        # after reorganize static images
-        # return self.image[int(self.side)]
+    def set_location(self, location):
+        super(Button, self).set_location(location)
+        self.update_image()
 
     def get_location(self):
-        return self.location
+        return super(Button, self).get_location()
 
-    def throw(self):
-        self.side = random.randint(0, 1) == 1
+    def update_image(self):
+        # no need for rect, black background is enough
+        # pygame.Rect(self.location * button_size[0], 0, button_size[0], button_size[1])
+        self.image = pygame.Surface(self.size)
+        self.image.fill(constants.black)
+        font = pygame.font.Font(constants.font, 20)
+        self.image.blit(font.render(self.display_name, True, constants.white, (0, 0)), (20, 5))
+
+
+class ActionCards(Token):
+    def __init__(self, name, display_name, location, image):
+        super(ActionCards, self).__init__(name, display_name, pygame.image.load(image).convert_alpha(), location)
         self.used = False
+        self.head = False
+        self.callback = name
 
-    def turn_over(self):
-        self.side = not self.side
-        self.used = False
+    def set_location(self, location):
+        super(ActionCards, self).set_location(location)
+
+    def get_location(self):
+        return super(ActionCards, self).get_location()
 
 
-class GameEngine:
+class GameEngine:  # todo: need a method to set diretion and check witness
     def __init__(self, log_file="log.txt"):
         # pygame surface related
         pygame.init()
         self.window_dimension = 1560, 920
         self.streets_dimension = 1060, 920
+        self.side_dimension = 500, 920
+        self.button_size = 100, 50
         self.screen = pygame.display.set_mode(self.window_dimension, 0, 32)
         self.background_image = pygame.image.load(constants.background_image).convert()
         self.log = open(log_file, "w")
 
         # setup
-        self.detectives = self.add_detectives()
-        self.tiles = self.add_tiles()
-        self.shuffle_tiles()
-        self.all_buttons = self.init_all_buttons()
+        self.detectives = []
+        self.tiles = []
+        self.all_buttons = {}
         self.buttons = []
-        self.button_size = 100, 50
+        self.actions = []
+        self.current_actions = [True, True, True, True]
+        for detective in constants.detectives:
+            self.detectives.append(Detective(*detective))
+        for tile in constants.tiles:
+            self.tiles.append(Tile(*tile))
+        for button in constants.buttons:
+            button = list(button) + [self.button_size]
+            self.all_buttons[button[0]] = Button(*button)
+        for i in range(4):
+            self.actions.append([])
+            self.actions[-1].append(ActionCards(*constants.actions[2 * i]))
+            self.actions[-1].append(ActionCards(*constants.actions[2 * i + 1]))
+        self.shuffle_actions()
+        self.shuffle_tiles_location()
 
-        # game status related
+        self.toggle_show_jack = False
+        self.jack = None
+
+        # game status flags
         self.game_started = False
         self.game_turn = None
         self.game_stage = None
         self.game_action = None
-        self.curr_status = None
-        self.curr_player = None
+        self.jack_status = None
+        self.curr_player = None  # either "d" or "j"
         self.witness = None
         self.mouse_position = None
-
         print("initialization finish")
 
-    def add_detectives(self):
-        detectives = []
-        for detective in constants.detectives:
-            detectives.append(Detective(*detective))
-        return detectives
-
-    def shuffle_tiles(self):
+    def shuffle_tiles_location(self):
         shuffled_locations = random.sample(constants.available_tile_locations, 9)
         for idx, tile in enumerate(self.tiles):
             tile.set_location(shuffled_locations[idx])
 
-    def add_tiles(self):
-        tiles = []
-        for tile in constants.tiles:
-            tiles.append(Tile(*tile))
-        return tiles
+    def shuffle_actions(self):
+        for i in range(len(self.actions)):
+            self.current_actions[i] = random.random() > 0.5
 
     def init_all_buttons(self):
         all_buttons = []
         return all_buttons
 
     def update_buttons(self):
-        pass
+        if self.game_started:
+            available_buttons = ["reveal", "cancel", "confirm", "start"]
+        else:
+            available_buttons = ["start"]
+
+        assert (len(available_buttons) < 5)
+        self.buttons.clear()
+        for idx, btn_name in enumerate(available_buttons):
+            btn_obj = self.all_buttons[btn_name]
+            btn_obj.set_location(idx)
+            self.buttons.append(btn_obj)
 
     def cleanup(self):
         self.log.close()
-
-    def run(self):
-        clock = pygame.time.Clock()
-        while True:
-            # clock.tick(60)
-            self.handle_events()
-            self.draw_board()
-            pygame.display.flip()
-            # pygame.time.wait(500)
-
-    def draw_buttons(self):
-        pass
 
     def draw_board(self):
         # each time redraw every pixel is slow,
         # but not matter in this board game :)
         self.screen.blit(self.draw_streets(), (0, 0))
         self.screen.blit(self.draw_side(), (self.streets_dimension[0], 0))
-        print("drawing board finish")
+        # print("drawing board finish")
 
     def draw_streets(self):
         # todo: do not hard code margin and padding
@@ -191,18 +221,51 @@ class GameEngine:
                                    (650, 820), (410, 820), (170, 820), (0, 650), (0, 410), (0, 170)]
         for detective in self.detectives:
             surface.blit(detective.image, positions_for_detective[detective.get_location()])
+        # blit actions
+        actions_to_show = [self.actions[i][int(self.current_actions[i])] for i in range(len(self.current_actions))]
+        for action in actions_to_show:
+            surface.blit(action.image, (940, 100 * action.get_location()))
         # blit hourglasses
 
         return surface
 
     def draw_side(self):
-        surface = pygame.Surface((self.window_dimension[0]-self.streets_dimension[0], self.streets_dimension[1]))
+        surface = pygame.Surface((self.window_dimension[0] - self.streets_dimension[0], self.streets_dimension[1]))
+        font = pygame.font.Font(constants.font, 20)
         # buttons
         for button in self.buttons:
-            area = (lambda x: (x * self.button_size[0], self.button_size[1]))(button.location)
-            pygame.draw.rect(surface, constants.grey, area)
-            surface.blit(pygame.font.render(button.prompt, True, constants.white, (0, 0)),
-                         (area[0] + 20, area[1] + 5))
+            # print(button.get_location())
+            surface.blit(button.image, (self.button_size[0] * button.get_location(), 0))
+        # prompts:
+        # reveal jack
+        if self.toggle_show_jack:
+            surface.blit(font.render("Jack is.", True, constants.white, (0, 0)), (0, 650))
+        # every person's visibility,
+        if self.game_started:
+            for idx, tile in enumerate(self.tiles):
+                # make this location based on their location on map, may have translation issue
+                surface.blit(font.render(tile.display_name, True, constants.white, (0, 0)), (0, 680 + idx * 25))
+        # turn and stage info,
+        if self.game_started:
+            turn_prompt = "第{0}回合,第{1}轮,{2}阶段,{3}行动".format(self.game_turn,
+                                                            self.game_action,
+                                                            self.game_stage,
+                                                            self.curr_player)
+            surface.blit(font.render(turn_prompt, True, constants.white, (0, 0)), (0, 550))
+        # jack and detective marker number,
+        # jack's status,
+        # game room prompt
+        return surface
+
+    def run(self):
+        clock = pygame.time.Clock()
+        while True:
+            # clock.tick(60)
+            self.handle_events()
+            self.update_buttons()
+            self.draw_board()
+            pygame.display.flip()
+            # pygame.time.wait(500)
 
     def handle_events(self):
         events = pygame.event.get()
@@ -216,11 +279,74 @@ class GameEngine:
             # elif event.type == pygame.KEYDOWN:
             #     self.doKeyDown(event.key)
 
+    def get_mouse_click(self, mouse_position):
+        """
+        only street area and button area is click-able
+        """
+        click_type, click_location = "invalid", 0
+        if mouse_position[0] < self.streets_dimension[0]:
+            if mouse_position[0] < 920:
+                if mouse_position[0] < 100:
+                    if 170 < mouse_position[1] < 270:
+                        click_type, click_location = "detectives", 11
+                    elif 410 < mouse_position[1] < 510:
+                        click_type, click_location = "detectives", 10
+                    elif 650 < mouse_position[1] < 750:
+                        click_type, click_location = "detectives", 9
+                elif mouse_position[0] > 820:
+                    if 170 < mouse_position[1] < 270:
+                        click_type, click_location = "detectives", 3
+                    elif 410 < mouse_position[1] < 510:
+                        click_type, click_location = "detectives", 4
+                    elif 650 < mouse_position[1] < 750:
+                        click_type, click_location = "detectives", 5
+                elif mouse_position[1] < 100:
+                    if 170 < mouse_position[0] < 270:
+                        click_type, click_location = "detectives", 0
+                    elif 410 < mouse_position[0] < 510:
+                        click_type, click_location = "detectives", 1
+                    elif 650 < mouse_position[0] < 750:
+                        click_type, click_location = "detectives", 2
+                elif mouse_position[1] > 820:
+                    if 170 < mouse_position[0] < 270:
+                        click_type, click_location = "detectives", 8
+                    elif 410 < mouse_position[0] < 510:
+                        click_type, click_location = "detectives", 7
+                    elif 650 < mouse_position[0] < 750:
+                        click_type, click_location = "detectives", 6
+                else:  # tiles area
+                    x = (mouse_position[0] - 100) // 240
+                    y = (mouse_position[1] - 100) // 240
+                    for idx, p in enumerate(self.tiles):
+                        if p.get_location() == (x, y):
+                            click_type, click_location = "tiles", idx
+            else:  # action cards
+                if mouse_position[1] < 400:
+                    click_type, click_location = "actions", mouse_position[1] // 100
+        else:  # click in side area
+            mouse_position = mouse_position[0] - self.streets_dimension[0], mouse_position[1]
+            if mouse_position[1] < self.button_size[1]:  # click on some button
+                button_clicked = mouse_position[0] // 100
+                if button_clicked < len(self.buttons):
+                    click_type, click_location = "buttons", button_clicked
+        return click_type, click_location
+
     def click(self):
-        self.mouse_position = pygame.mouse.get_pos()
-        print("mouse clicked:", self.mouse_position)
+        mouse_position = pygame.mouse.get_pos()
+        click_type, click_location = self.get_mouse_click(mouse_position)
+
+        if click_type == "detectives":
+            print("click detective", click_location)
+        elif click_type == "tiles":
+            print("click tile", click_location)
+        elif click_type == "buttons":
+            getattr(self, self.buttons[click_location].callback)()
+        elif click_type == "actions":
+            print("click action", click_location)
+        print("mouse clicked:", mouse_position)
 
     def check_jack_visibility(self):
+        # todo: need to modify tile class
         pass
 
     # below are actions created for 8 action cards
@@ -251,13 +377,24 @@ class GameEngine:
 
     # below are function for button callbacks
     def start_game(self):  # including start and restart
-        pass
+        if not self.game_started:
+            self.game_turn = 1
+            self.game_stage = 1
+            self.game_action = 1
+            self.curr_player = "d"
+            self.game_started = True
+            print("game started!")
+        else:
+            print("already started!")
 
     def confirm(self):
-        pass
+        print("confirm")
 
     def cancel(self):
-        pass
+        print("cancel")
 
     def checkpoint(self):
         pass
+
+    def reveal(self):
+        self.toggle_show_jack = not self.toggle_show_jack
