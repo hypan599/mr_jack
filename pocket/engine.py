@@ -8,6 +8,25 @@ import constants
 
 
 # todo: use pythonic getter and setter
+# todo: focus on render first, then think about what is needed
+
+
+class Player:
+    def __init__(self, is_human=None):
+        self.is_human = is_human
+        self.tokens = []
+
+
+class Jack(Player):
+    def __init__(self):
+        super(Jack, self).__init__()
+        self.real_jack = None
+
+
+class Investigator(Player):
+    def __init__(self):
+        super(Investigator, self).__init__()
+        self.characters_with_alibi = []
 
 
 class Token:
@@ -26,8 +45,11 @@ class Token:
     def get_location(self):
         return self.location
 
+    def get_image(self):
+        return self.image
 
-class Tile(Token):
+
+class Tile(Token):    # todo: need a method to set direction and check witness
     def __init__(self, name, display_name, hourglass_num, image):
         super(Tile, self).__init__(name, display_name, None, (0, 0))
         self.hourglass_num = hourglass_num
@@ -36,7 +58,7 @@ class Tile(Token):
         self.suspect = 1
         self.is_seen = 0
         self.images = [pygame.image.load(image[0]).convert(), pygame.image.load(image[1]).convert()]
-        self.update_image()
+        self.flip_image()
         # todo: seems better to do this using picture rotation?
 
     def __str__(self):
@@ -48,14 +70,13 @@ class Tile(Token):
     def get_location(self):
         return super(Tile, self).get_location()
 
-    def rotate(self, direction=0):
+    def rotate(self, direction=0):  # counterclockwise
         if direction:
             self.direction = direction
         else:
             self.direction = (self.direction + 1) % 4
-        self.update_image()
 
-    def update_image(self):
+    def flip_image(self):
         self.image = self.images[int(self.head)]
 
     def set_direction(self, direction):
@@ -66,7 +87,10 @@ class Tile(Token):
 
     def flip(self):
         self.head = not self.head
-        self.update_image()
+        self.flip_image()
+
+    def get_image(self):
+        return pygame.transform.rotate(self.image, self.direction * 90)
 
 
 class Detective(Token):
@@ -75,7 +99,7 @@ class Detective(Token):
         self.init_location = location
 
     def set_location(self, location):
-        super(Detective, self).set_location(location)
+        super(Detective, self).set_location(location % 12)
 
     def get_location(self, bias=0):
         return (super(Detective, self).get_location() + bias) % 12
@@ -89,7 +113,6 @@ class Detective(Token):
         self.location = self.init_location
 
 
-# todo: make general buttons and change based on game status
 class Button(Token):
     def __init__(self, name, display_name, callback, size=(100, 50)):
         super(Button, self).__init__(name, display_name, None, 0)
@@ -126,7 +149,19 @@ class ActionCards(Token):
         return super(ActionCards, self).get_location()
 
 
-class GameEngine:  # todo: need a method to set diretion and check witness
+class Hourglass(Token):
+    def __init__(self, name, display_name, location, image, turn):
+        super(Hourglass, self).__init__(name, display_name, pygame.image.load(image).convert_alpha(), location)
+        self.turn = turn
+
+    def set_location(self, location):
+        super(Hourglass, self).set_location(location)
+
+    def get_location(self):
+        return super(Hourglass, self).get_location()
+
+
+class GameEngine:
     def __init__(self, log_file="log.txt"):
         # pygame surface related
         pygame.init()
@@ -136,14 +171,15 @@ class GameEngine:  # todo: need a method to set diretion and check witness
         self.button_size = 100, 50
         self.screen = pygame.display.set_mode(self.window_dimension, 0, 32)
         self.background_image = pygame.image.load(constants.background_image).convert()
-        self.log = open(log_file, "w")
+        self.message = ""
 
-        # setup
+        # setup  # todo: put load elements in another function
         self.detectives = []
         self.tiles = []
         self.all_buttons = {}
         self.buttons = []
         self.actions = []
+        self.hourglasses = []
         self.current_actions = [True, True, True, True]
         for detective in constants.detectives:
             self.detectives.append(Detective(*detective))
@@ -152,6 +188,8 @@ class GameEngine:  # todo: need a method to set diretion and check witness
         for button in constants.buttons:
             button = list(button) + [self.button_size]
             self.all_buttons[button[0]] = Button(*button)
+        for i in range(1, 9):
+            self.hourglasses.append(Hourglass(constants.hourglass[0], constants.hourglass[1], i, constants.hourglass[2], i))
         for i in range(4):
             self.actions.append([])
             self.actions[-1].append(ActionCards(*constants.actions[2 * i]))
@@ -162,7 +200,7 @@ class GameEngine:  # todo: need a method to set diretion and check witness
         self.toggle_show_jack = False
         self.jack = None
 
-        # game status flags
+        # game status flags  # todo: put these setup in another function
         self.game_started = False
         self.game_turn = None
         self.game_stage = None
@@ -172,6 +210,8 @@ class GameEngine:  # todo: need a method to set diretion and check witness
         self.witness = None
         self.mouse_position = None
         print("initialization finish")
+        self.tile_mouse_on_img = pygame.image.load(constants.tile_mouse_on).convert_alpha()
+        self.action_mouse_on_img = pygame.image.load(constants.action_mouse_on).convert_alpha()
 
     def shuffle_tiles_location(self):
         shuffled_locations = random.sample(constants.available_tile_locations, 9)
@@ -200,36 +240,45 @@ class GameEngine:  # todo: need a method to set diretion and check witness
             self.buttons.append(btn_obj)
 
     def cleanup(self):
-        self.log.close()
+        self.message = None
 
     def draw_board(self):
-        # each time redraw every pixel is slow,
-        # but not matter in this board game :)
-        self.screen.blit(self.draw_streets(), (0, 0))
-        self.screen.blit(self.draw_side(), (self.streets_dimension[0], 0))
-        # print("drawing board finish")
+        # each time redraw every pixel is slow, but not matter in this board game :)
+        mouse_position = pygame.mouse.get_pos()
+        hover_type, hover_location = self.get_mouse_location(mouse_position)  # check availibility for
+        if hover_type in ["detectives", "tiles", "actions"]:
+            self.screen.blit(self.draw_streets(hover_type, hover_location), (0, 0))
+            self.screen.blit(self.draw_side(), (self.streets_dimension[0], 0))
+        else:
+            self.screen.blit(self.draw_streets(), (0, 0))
+            self.screen.blit(self.draw_side(hover_type, hover_location), (self.streets_dimension[0], 0))
 
-    def draw_streets(self):
+    def draw_streets(self, hover_type = None, hover_location = None):
         # todo: do not hard code margin and padding
         surface = pygame.Surface(self.streets_dimension)
         surface.blit(self.background_image, (0, 0))
         # blit tiles
-        for tile in self.tiles:
-            surface.blit(tile.image, (lambda x: (100 + 240 * x[0], 100 + 240 * x[1]))(tile.get_location()))
+        for idx, tile in enumerate(self.tiles):
+            surface.blit(tile.get_image(), (lambda x: (100 + 240 * x[0], 100 + 240 * x[1]))(tile.get_location()))
+            if hover_type == "tiles" and hover_location == idx:
+                surface.blit(self.tile_mouse_on_img, (lambda x: (100 + 240 * x[0], 100 + 240 * x[1]))(tile.get_location()))
         # blit detectives
         positions_for_detective = [(170, 0), (410, 0), (650, 0), (820, 170), (820, 410), (820, 650),
                                    (650, 820), (410, 820), (170, 820), (0, 650), (0, 410), (0, 170)]
-        for detective in self.detectives:
+        for detective in self.detectives:  # todo: for position other than for detective
             surface.blit(detective.image, positions_for_detective[detective.get_location()])
         # blit actions
         actions_to_show = [self.actions[i][int(self.current_actions[i])] for i in range(len(self.current_actions))]
-        for action in actions_to_show:
+        for idx, action in enumerate(actions_to_show):
             surface.blit(action.image, (940, 100 * action.get_location()))
+            if hover_type == "actions" and hover_location == idx:
+                surface.blit(self.action_mouse_on_img, (940, 100 * action.get_location()))
         # blit hourglasses
-
+        for hourglass in self.hourglasses:
+            surface.blit(hourglass.get_image(), (950, 400 + 60 * hourglass.get_location()))
         return surface
 
-    def draw_side(self):
+    def draw_side(self, hover_type = None, hover_location = None):
         surface = pygame.Surface((self.window_dimension[0] - self.streets_dimension[0], self.streets_dimension[1]))
         font = pygame.font.Font(constants.font, 20)
         # buttons
@@ -237,6 +286,8 @@ class GameEngine:  # todo: need a method to set diretion and check witness
             # print(button.get_location())
             surface.blit(button.image, (self.button_size[0] * button.get_location(), 0))
         # prompts:
+        if self.message:
+            surface.blit(font.render(self.message, True, constants.white, (0, 0)), (0, 350))
         # reveal jack
         if self.toggle_show_jack:
             surface.blit(font.render("Jack is.", True, constants.white, (0, 0)), (0, 650))
@@ -245,7 +296,7 @@ class GameEngine:  # todo: need a method to set diretion and check witness
             for idx, tile in enumerate(self.tiles):
                 # make this location based on their location on map, may have translation issue
                 surface.blit(font.render(tile.display_name, True, constants.white, (0, 0)), (0, 680 + idx * 25))
-        # turn and stage info,
+        # turn and stage info
         if self.game_started:
             turn_prompt = "第{0}回合,第{1}轮,{2}阶段,{3}行动".format(self.game_turn,
                                                             self.game_action,
@@ -279,61 +330,61 @@ class GameEngine:  # todo: need a method to set diretion and check witness
             # elif event.type == pygame.KEYDOWN:
             #     self.doKeyDown(event.key)
 
-    def get_mouse_click(self, mouse_position):
+    def get_mouse_location(self, mouse_position):
         """
         only street area and button area is click-able
         """
-        click_type, click_location = "invalid", 0
+        mouse_type, mouse_location = "invalid", 0
         if mouse_position[0] < self.streets_dimension[0]:
             if mouse_position[0] < 920:
                 if mouse_position[0] < 100:
                     if 170 < mouse_position[1] < 270:
-                        click_type, click_location = "detectives", 11
+                        mouse_type, mouse_location = "detectives", 11
                     elif 410 < mouse_position[1] < 510:
-                        click_type, click_location = "detectives", 10
+                        mouse_type, mouse_location = "detectives", 10
                     elif 650 < mouse_position[1] < 750:
-                        click_type, click_location = "detectives", 9
+                        mouse_type, mouse_location = "detectives", 9
                 elif mouse_position[0] > 820:
                     if 170 < mouse_position[1] < 270:
-                        click_type, click_location = "detectives", 3
+                        mouse_type, mouse_location = "detectives", 3
                     elif 410 < mouse_position[1] < 510:
-                        click_type, click_location = "detectives", 4
+                        mouse_type, mouse_location = "detectives", 4
                     elif 650 < mouse_position[1] < 750:
-                        click_type, click_location = "detectives", 5
+                        mouse_type, mouse_location = "detectives", 5
                 elif mouse_position[1] < 100:
                     if 170 < mouse_position[0] < 270:
-                        click_type, click_location = "detectives", 0
+                        mouse_type, mouse_location = "detectives", 0
                     elif 410 < mouse_position[0] < 510:
-                        click_type, click_location = "detectives", 1
+                        mouse_type, mouse_location = "detectives", 1
                     elif 650 < mouse_position[0] < 750:
-                        click_type, click_location = "detectives", 2
+                        mouse_type, mouse_location = "detectives", 2
                 elif mouse_position[1] > 820:
                     if 170 < mouse_position[0] < 270:
-                        click_type, click_location = "detectives", 8
+                        mouse_type, mouse_location = "detectives", 8
                     elif 410 < mouse_position[0] < 510:
-                        click_type, click_location = "detectives", 7
+                        mouse_type, mouse_location = "detectives", 7
                     elif 650 < mouse_position[0] < 750:
-                        click_type, click_location = "detectives", 6
+                        mouse_type, mouse_location = "detectives", 6
                 else:  # tiles area
                     x = (mouse_position[0] - 100) // 240
                     y = (mouse_position[1] - 100) // 240
                     for idx, p in enumerate(self.tiles):
                         if p.get_location() == (x, y):
-                            click_type, click_location = "tiles", idx
+                            mouse_type, mouse_location = "tiles", idx
             else:  # action cards
                 if mouse_position[1] < 400:
-                    click_type, click_location = "actions", mouse_position[1] // 100
+                    mouse_type, mouse_location = "actions", mouse_position[1] // 100
         else:  # click in side area
             mouse_position = mouse_position[0] - self.streets_dimension[0], mouse_position[1]
             if mouse_position[1] < self.button_size[1]:  # click on some button
                 button_clicked = mouse_position[0] // 100
                 if button_clicked < len(self.buttons):
-                    click_type, click_location = "buttons", button_clicked
-        return click_type, click_location
+                    mouse_type, mouse_location = "buttons", button_clicked
+        return mouse_type, mouse_location
 
     def click(self):
         mouse_position = pygame.mouse.get_pos()
-        click_type, click_location = self.get_mouse_click(mouse_position)
+        click_type, click_location = self.get_mouse_location(mouse_position)
 
         if click_type == "detectives":
             print("click detective", click_location)
@@ -342,7 +393,7 @@ class GameEngine:  # todo: need a method to set diretion and check witness
         elif click_type == "buttons":
             getattr(self, self.buttons[click_location].callback)()
         elif click_type == "actions":
-            print("click action", click_location)
+            getattr(self, self.actions[click_location][int(self.current_actions[click_location])].callback)()
         print("mouse clicked:", mouse_position)
 
     def check_jack_visibility(self):
@@ -361,10 +412,11 @@ class GameEngine:  # todo: need a method to set diretion and check witness
         self.move_one_detective(self.detectives[2], 2)
 
     def joker(self):  # named after same action in real game
-        pass
+        self.log("joker")
 
     def move_one_detective(self, subject, max_steps):
-        pass
+        subject.set_location(subject.get_location() + 1)
+        self.log("moving: " + subject.display_name)
 
     def rotate(self):
         pass
@@ -383,9 +435,9 @@ class GameEngine:  # todo: need a method to set diretion and check witness
             self.game_action = 1
             self.curr_player = "d"
             self.game_started = True
-            print("game started!")
+            self.log("game started!")
         else:
-            print("already started!")
+            self.log("already started!")
 
     def confirm(self):
         print("confirm")
@@ -398,3 +450,6 @@ class GameEngine:  # todo: need a method to set diretion and check witness
 
     def reveal(self):
         self.toggle_show_jack = not self.toggle_show_jack
+
+    def log(self, message):
+        self.message = message

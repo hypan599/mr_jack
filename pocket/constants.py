@@ -17,6 +17,8 @@ tiles = [
     ("yuanshanheye", u"远山和叶", 1, [os.path.join(images_dir, "tiles", i + "tile8.JPG") for i in ["tail_", "head_"]]),
     ("lingmuyuanzi", u"铃木园子", 1, [os.path.join(images_dir, "tiles", i + "tile9.JPG") for i in ["tail_", "head_"]]),
 ]
+tile_mouse_on = os.path.join(images_dir, "tiles", "map_mouse_on.PNG")
+action_mouse_on = os.path.join(images_dir, "actions", "action_mouse_on.PNG")
 
 buttons = [
     ("start", "START", "start_game"),
@@ -27,16 +29,19 @@ buttons = [
     ("checkpoint", "SAVE", "checkpoint"),
 ]
 actions = [
-    ("rotate", "ROTATE", 0,     os.path.join(images_dir, "actions", "head_action1.PNG")),
+    ("rotate", "ROTATE", 0, os.path.join(images_dir, "actions", "head_action1.PNG")),
     ("exchange", "EXCHANGE", 0, os.path.join(images_dir, "actions", "tail_action1.PNG")),
-    ("alibi", "ALIBI", 1,       os.path.join(images_dir, "actions", "head_action2.PNG")),
-    ("move1", "MOVE1", 1,       os.path.join(images_dir, "actions", "tail_action2.PNG")),
-    ("rotate", "ROTATE", 2,     os.path.join(images_dir, "actions", "head_action3.PNG")),
-    ("joker", "JOKER", 2,       os.path.join(images_dir, "actions", "tail_action3.PNG")),
-    ("move3", "MOVE3", 3,       os.path.join(images_dir, "actions", "head_action4.PNG")),
-    ("move2", "MOVE2", 3,       os.path.join(images_dir, "actions", "tail_action4.PNG")),
+    ("alibi", "ALIBI", 1, os.path.join(images_dir, "actions", "head_action2.PNG")),
+    ("move1", "MOVE1", 1, os.path.join(images_dir, "actions", "tail_action2.PNG")),
+    ("rotate", "ROTATE", 2, os.path.join(images_dir, "actions", "head_action3.PNG")),
+    ("joker", "JOKER", 2, os.path.join(images_dir, "actions", "tail_action3.PNG")),
+    ("move3", "MOVE3", 3, os.path.join(images_dir, "actions", "head_action4.PNG")),
+    ("move2", "MOVE2", 3, os.path.join(images_dir, "actions", "tail_action4.PNG")),
 ]
+hourglass = ("Hourglass", "HOURGLASS", os.path.join(images_dir, "hourglass.PNG"))
+
 background_image = os.path.join(images_dir, "begin.jpg")
+hourglass_image = os.path.join(images_dir, "hourglass.PNG")
 
 available_tile_locations = [(i, j) for i in range(3) for j in range(3)]
 font = "msyh.ttf"
