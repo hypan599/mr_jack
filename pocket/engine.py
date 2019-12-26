@@ -7,8 +7,10 @@ from operator import xor
 import constants
 
 
-# todo: use pythonic getter and setter
-# todo: focus on render first, then think about what is needed
+# maybe: use pythonic getter and setter
+# todo: hourglass change to 2 columns
+# todo: actions -> choose target then save
+
 
 
 class Player:
@@ -49,7 +51,7 @@ class Token:
         return self.image
 
 
-class Tile(Token):    # todo: need a method to set direction and check witness
+class Tile(Token):  # todo: need a method to set direction and check witness
     def __init__(self, name, display_name, hourglass_num, image):
         super(Tile, self).__init__(name, display_name, None, (0, 0))
         self.hourglass_num = hourglass_num
@@ -59,7 +61,6 @@ class Tile(Token):    # todo: need a method to set direction and check witness
         self.is_seen = 0
         self.images = [pygame.image.load(image[0]).convert(), pygame.image.load(image[1]).convert()]
         self.flip_image()
-        # todo: seems better to do this using picture rotation?
 
     def __str__(self):
         return "Tile: " + super(Tile, self).__str__()
@@ -70,11 +71,9 @@ class Tile(Token):    # todo: need a method to set direction and check witness
     def get_location(self):
         return super(Tile, self).get_location()
 
-    def rotate(self, direction=0):  # counterclockwise
-        if direction:
-            self.direction = direction
-        else:
-            self.direction = (self.direction + 1) % 4
+    def rotate(self):  # counterclockwise
+        self.direction += 1
+        self.direction %= 4
 
     def flip_image(self):
         self.image = self.images[int(self.head)]
@@ -131,7 +130,7 @@ class Button(Token):
         # pygame.Rect(self.location * button_size[0], 0, button_size[0], button_size[1])
         self.image = pygame.Surface(self.size)
         self.image.fill(constants.black)
-        font = pygame.font.Font(constants.font, 20)
+        font = pygame.font.Font(constants.font, 15)
         self.image.blit(font.render(self.display_name, True, constants.white, (0, 0)), (20, 5))
 
 
@@ -173,7 +172,24 @@ class GameEngine:
         self.background_image = pygame.image.load(constants.background_image).convert()
         self.message = ""
 
-        # setup  # todo: put load elements in another function
+        # game status flags
+        self.game_turn = None  # None is before start, otherwise integer.
+        self.action_chosen = False
+        self.num_action_chosen = 0
+        self.target_chosen = False
+        self.num_targets = 0
+        self.target1 = None
+        self.target2 = None
+        self.clickable = []
+
+        # jack related flags
+        self.jack_status = None
+        self.witness = None
+        self.mouse_position = None
+        self.toggle_show_jack = False
+        self.jack = None
+
+        # load static
         self.detectives = []
         self.tiles = []
         self.all_buttons = {}
@@ -196,38 +212,24 @@ class GameEngine:
             self.actions[-1].append(ActionCards(*constants.actions[2 * i + 1]))
         self.shuffle_actions()
         self.shuffle_tiles_location()
-
-        self.toggle_show_jack = False
-        self.jack = None
-
-        # game status flags  # todo: put these setup in another function
-        self.game_started = False
-        self.game_turn = None
-        self.game_stage = None
-        self.game_action = None
-        self.jack_status = None
-        self.curr_player = None  # either "d" or "j"
-        self.witness = None
-        self.mouse_position = None
-        print("initialization finish")
         self.tile_mouse_on_img = pygame.image.load(constants.tile_mouse_on).convert_alpha()
         self.action_mouse_on_img = pygame.image.load(constants.action_mouse_on).convert_alpha()
+        self.detective_mouse_on_img = pygame.image.load(constants.detective_mouse_on).convert_alpha()
+        print("initialization finish")
 
     def shuffle_tiles_location(self):
         shuffled_locations = random.sample(constants.available_tile_locations, 9)
         for idx, tile in enumerate(self.tiles):
             tile.set_location(shuffled_locations[idx])
+            for i in range(random.randint(0, 3)):
+                tile.rotate()
 
     def shuffle_actions(self):
         for i in range(len(self.actions)):
             self.current_actions[i] = random.random() > 0.5
 
-    def init_all_buttons(self):
-        all_buttons = []
-        return all_buttons
-
     def update_buttons(self):
-        if self.game_started:
+        if self.game_turn is not None:
             available_buttons = ["reveal", "cancel", "confirm", "start"]
         else:
             available_buttons = ["start"]
@@ -242,10 +244,13 @@ class GameEngine:
     def cleanup(self):
         self.message = None
 
+    def is_clickable(self, click_type, click_location):
+        return True
+
     def draw_board(self):
         # each time redraw every pixel is slow, but not matter in this board game :)
         mouse_position = pygame.mouse.get_pos()
-        hover_type, hover_location = self.get_mouse_location(mouse_position)  # check availibility for
+        hover_type, hover_location = self.get_mouse_location(mouse_position)  # check availability for
         if hover_type in ["detectives", "tiles", "actions"]:
             self.screen.blit(self.draw_streets(hover_type, hover_location), (0, 0))
             self.screen.blit(self.draw_side(), (self.streets_dimension[0], 0))
@@ -253,7 +258,7 @@ class GameEngine:
             self.screen.blit(self.draw_streets(), (0, 0))
             self.screen.blit(self.draw_side(hover_type, hover_location), (self.streets_dimension[0], 0))
 
-    def draw_streets(self, hover_type = None, hover_location = None):
+    def draw_streets(self, hover_type=None, hover_location=None):
         # todo: do not hard code margin and padding
         surface = pygame.Surface(self.streets_dimension)
         surface.blit(self.background_image, (0, 0))
@@ -265,8 +270,10 @@ class GameEngine:
         # blit detectives
         positions_for_detective = [(170, 0), (410, 0), (650, 0), (820, 170), (820, 410), (820, 650),
                                    (650, 820), (410, 820), (170, 820), (0, 650), (0, 410), (0, 170)]
-        for detective in self.detectives:  # todo: for position other than for detective
+        for detective in self.detectives:
             surface.blit(detective.image, positions_for_detective[detective.get_location()])
+            if hover_type == "detectives" and hover_location == detective.get_location():
+                surface.blit(self.detective_mouse_on_img, positions_for_detective[detective.get_location()])
         # blit actions
         actions_to_show = [self.actions[i][int(self.current_actions[i])] for i in range(len(self.current_actions))]
         for idx, action in enumerate(actions_to_show):
@@ -278,9 +285,9 @@ class GameEngine:
             surface.blit(hourglass.get_image(), (950, 400 + 60 * hourglass.get_location()))
         return surface
 
-    def draw_side(self, hover_type = None, hover_location = None):
+    def draw_side(self, hover_type=None, hover_location=None):
         surface = pygame.Surface((self.window_dimension[0] - self.streets_dimension[0], self.streets_dimension[1]))
-        font = pygame.font.Font(constants.font, 20)
+        font = pygame.font.Font(constants.font, 15)
         # buttons
         for button in self.buttons:
             # print(button.get_location())
@@ -292,16 +299,16 @@ class GameEngine:
         if self.toggle_show_jack:
             surface.blit(font.render("Jack is.", True, constants.white, (0, 0)), (0, 650))
         # every person's visibility,
-        if self.game_started:
+        if self.game_turn is not None:
             for idx, tile in enumerate(self.tiles):
                 # make this location based on their location on map, may have translation issue
-                surface.blit(font.render(tile.display_name, True, constants.white, (0, 0)), (0, 680 + idx * 25))
+                text = font.render("{0}: {1}可见".format(tile.display_name, " " if tile.is_seen else "不"), True, constants.white, (0, 0))
+                surface.blit(text, (0, 680 + idx * 25))
         # turn and stage info
-        if self.game_started:
-            turn_prompt = "第{0}回合,第{1}轮,{2}阶段,{3}行动".format(self.game_turn,
-                                                            self.game_action,
-                                                            self.game_stage,
-                                                            self.curr_player)
+        if self.game_turn is not None:
+            turn_prompt = "第{0}回合, 第{1}轮, {2}行动".format(self.game_turn,
+                                                        self.num_action_chosen + 1,
+                                                        "Jack " if self.game_turn % 2 else "Detective ")
             surface.blit(font.render(turn_prompt, True, constants.white, (0, 0)), (0, 550))
         # jack and detective marker number,
         # jack's status,
@@ -309,7 +316,7 @@ class GameEngine:
         return surface
 
     def run(self):
-        clock = pygame.time.Clock()
+        # clock = pygame.time.Clock()
         while True:
             # clock.tick(60)
             self.handle_events()
@@ -332,7 +339,7 @@ class GameEngine:
 
     def get_mouse_location(self, mouse_position):
         """
-        only street area and button area is click-able
+        only street tiles, detectives, action tiles, and button area is click-able
         """
         mouse_type, mouse_location = "invalid", 0
         if mouse_position[0] < self.streets_dimension[0]:
@@ -390,6 +397,7 @@ class GameEngine:
             print("click detective", click_location)
         elif click_type == "tiles":
             print("click tile", click_location)
+            self.tiles[click_location].rotate()
         elif click_type == "buttons":
             getattr(self, self.buttons[click_location].callback)()
         elif click_type == "actions":
@@ -415,11 +423,12 @@ class GameEngine:
         self.log("joker")
 
     def move_one_detective(self, subject, max_steps):
+        # todo: check for existing detectives
         subject.set_location(subject.get_location() + 1)
         self.log("moving: " + subject.display_name)
 
     def rotate(self):
-        pass
+        print("rorate")
 
     def exchange(self):
         pass
@@ -429,15 +438,9 @@ class GameEngine:
 
     # below are function for button callbacks
     def start_game(self):  # including start and restart
-        if not self.game_started:
+        if self.game_turn is None:
             self.game_turn = 1
-            self.game_stage = 1
-            self.game_action = 1
-            self.curr_player = "d"
-            self.game_started = True
             self.log("game started!")
-        else:
-            self.log("already started!")
 
     def confirm(self):
         print("confirm")
@@ -451,5 +454,5 @@ class GameEngine:
     def reveal(self):
         self.toggle_show_jack = not self.toggle_show_jack
 
-    def log(self, message):
-        self.message = message
+    def log(self, *message):
+        self.message = " ".join([str(i) for i in message])

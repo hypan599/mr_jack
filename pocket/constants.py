@@ -19,6 +19,7 @@ tiles = [
 ]
 tile_mouse_on = os.path.join(images_dir, "tiles", "map_mouse_on.PNG")
 action_mouse_on = os.path.join(images_dir, "actions", "action_mouse_on.PNG")
+detective_mouse_on = os.path.join(images_dir, "detectives", "detective_mouse_on.PNG")
 
 buttons = [
     ("start", "START", "start_game"),
