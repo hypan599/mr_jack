@@ -10,8 +10,9 @@ import constants
 # maybe: use pythonic getter and setter
 # todo: hourglass change to 2 columns
 # todo: actions -> choose target then save
+# todo: let the street be empty before game starts
 
-
+# todo: detective is clickable when
 
 class Player:
     def __init__(self, is_human=None):
@@ -176,11 +177,11 @@ class GameEngine:
         self.game_turn = None  # None is before start, otherwise integer.
         self.action_chosen = False
         self.num_action_chosen = 0
-        self.target_chosen = False
+        self.target_chosen = True
         self.num_targets = 0
         self.target1 = None
         self.target2 = None
-        self.clickable = []
+        self.clickable = {}
 
         # jack related flags
         self.jack_status = None
@@ -245,13 +246,13 @@ class GameEngine:
         self.message = None
 
     def is_clickable(self, click_type, click_location):
-        return True
+        return click_location in self.clickable.get(click_type, [])
 
     def draw_board(self):
         # each time redraw every pixel is slow, but not matter in this board game :)
         mouse_position = pygame.mouse.get_pos()
         hover_type, hover_location = self.get_mouse_location(mouse_position)  # check availability for
-        if hover_type in ["detectives", "tiles", "actions"]:
+        if hover_type in ["detectives", "tiles", "actions"] and self.is_clickable(hover_type, hover_location):
             self.screen.blit(self.draw_streets(hover_type, hover_location), (0, 0))
             self.screen.blit(self.draw_side(), (self.streets_dimension[0], 0))
         else:
@@ -411,7 +412,12 @@ class GameEngine:
     # below are actions created for 8 action cards
     # actions are not this simple, also includes "available mouse location" stuff
     def move1(self):
-        self.move_one_detective(self.detectives[0], 2)
+        self.target_chosen = False
+        self.clickable["detectives"] = [
+            (self.detectives[0].get_location() + 1) % 12,
+            (self.detectives[0].get_location() + 2) % 12,
+        ]
+        # self.move_one_detective(self.detectives[0], 2)
 
     def move2(self):
         self.move_one_detective(self.detectives[1], 2)
