@@ -259,7 +259,7 @@ class GameEngine:
             self.screen.blit(self.draw_streets(), (0, 0))
             self.screen.blit(self.draw_side(hover_type, hover_location), (self.streets_dimension[0], 0))
 
-    def draw_streets(self, hover_type=None, hover_location=None):
+    def draw_streets(self, hover_type=None, hover_location=None): # todo: should be method of each object
         # todo: do not hard code margin and padding
         surface = pygame.Surface(self.streets_dimension)
         surface.blit(self.background_image, (0, 0))
