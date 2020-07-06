@@ -1,26 +1,195 @@
 import os
 
-images_dir = "images"
-detectives = [
-    ("kenan", u"江户川柯南", 11, os.path.join(images_dir, "detectives", "detective1.PNG")),
-    ("maolixiaowulang", u"毛利小五郎", 7, os.path.join(images_dir, "detectives", "detective2.PNG")),
-    ("fubupingci", u"服部平次", 3, os.path.join(images_dir, "detectives", "detective3.PNG")),
-]
-tiles = [
-    ("aliboshi", u"阿笠博士", 1, [os.path.join(images_dir, "tiles", i + "tile1.JPG") for i in ["tail_", "head_"]]),
-    ("maolilan", u"毛利　兰", 2, [os.path.join(images_dir, "tiles", i + "tile2.JPG") for i in ["tail_", "head_"]]),
-    ("guaidaojide", u"怪盗基德", 1, [os.path.join(images_dir, "tiles", i + "tile3.JPG") for i in ["tail_", "head_"]]),
-    ("huiyuanai", u"灰原　哀", 0, [os.path.join(images_dir, "tiles", i + "tile4.JPG") for i in ["tail_", "head_"]]),
-    ("mumushisan", u"目暮十三", 1, [os.path.join(images_dir, "tiles", i + "tile5.JPG") for i in ["tail_", "head_"]]),
-    ("chijingxiuyi", u"赤井秀一", 1, [os.path.join(images_dir, "tiles", i + "tile6.JPG") for i in ["tail_", "head_"]]),
-    ("beiermode", u"贝尔摩德", 0, [os.path.join(images_dir, "tiles", i + "tile7.JPG") for i in ["tail_", "head_"]]),
-    ("yuanshanheye", u"远山和叶", 1, [os.path.join(images_dir, "tiles", i + "tile8.JPG") for i in ["tail_", "head_"]]),
-    ("lingmuyuanzi", u"铃木园子", 1, [os.path.join(images_dir, "tiles", i + "tile9.JPG") for i in ["tail_", "head_"]]),
-]
-tile_mouse_on = os.path.join(images_dir, "tiles", "map_mouse_on.PNG")
-action_mouse_on = os.path.join(images_dir, "actions", "action_mouse_on.PNG")
-detective_mouse_on = os.path.join(images_dir, "detectives", "detective_mouse_on.PNG")
+# todo: move this to street class
+available_tile_locations = [(i, j) for i in range(3) for j in range(3)]
 
+# Font and Color
+FONT = "msyh.ttf"
+YELLOW = 128, 128, 0
+GREY = 128, 128, 128
+WHITE = 255, 255, 255
+BLACK = 0, 0, 0
+
+# todo: need some math here
+# mac screen is 1440 * 900, windows is much higher
+# small, medium(current), high
+# but we need to recalculate all other dimensions, don't hard code anything!
+DIMENSIONS = {
+    "SMALL": {},
+    "MEDIUM": {
+        "Window": (1560, 920),
+        "BoardArea": (1060, 920),
+        "StreetTile": (1060, 920),
+        "ActionToken": (1060, 920),
+        "Detective": (1060, 920),
+        "Prompt": (1060, 920),
+        "Button": (100, 50),
+    },
+    "LARGE": {},
+}
+
+IMAGE_ROOT = "images"
+BACKGROUND_IMAGE = "begin.jpg"
+
+IMAGE_TILES = "tiles"
+TILE_MOUSE_ON = "map_mouse_on.PNG"
+TILES = [
+    {
+        "Name": "aliboshi",
+        "DisplayName": u"阿笠博士",
+        "HeadImage": "head_tile1.JPG",
+        "TailImage": "tail_tile1.JPG",
+        "Hourglass": 1,
+    },
+    {
+        "Name": "xiaolan",
+        "DisplayName": u"毛利　兰",
+        "HeadImage": "head_tile2.JPG",
+        "TailImage": "tail_tile2.JPG",
+        "Hourglass": 2,
+    },
+    {
+        "Name": "jide",
+        "DisplayName": u"怪盗基德",
+        "HeadImage": "head_tile3.JPG",
+        "TailImage": "tail_tile3.JPG",
+        "Hourglass": 1,
+    },
+    {
+        "Name": "huiyuanai",
+        "DisplayName": u"灰原　哀",
+        "HeadImage": "head_tile4.JPG",
+        "TailImage": "tail_tile4.JPG",
+        "Hourglass": 2,
+    },
+    {
+        "Name": "mumushisan",
+        "DisplayName": u"目暮十三",
+        "HeadImage": "head_tile5.JPG",
+        "TailImage": "tail_tile5.JPG",
+        "Hourglass": 1,
+    },
+    {
+        "Name": "chijingxiuyi",
+        "DisplayName": u"赤井秀一",
+        "HeadImage": "head_tile6.JPG",
+        "TailImage": "tail_tile6.JPG",
+        "Hourglass": 1,
+    },
+    {
+        "Name": "beiermode",
+        "DisplayName": u"贝尔摩德",
+        "HeadImage": "head_tile7.JPG",
+        "TailImage": "tail_tile7.JPG",
+        "Hourglass": 0,
+    },
+    {
+        "Name": "yuanshanheye",
+        "DisplayName": u"远山和叶",
+        "HeadImage": "head_tile8.JPG",
+        "TailImage": "tail_tile8.JPG",
+        "Hourglass": 1,
+    },
+    {
+        "Name": "lingmuyuanzi",
+        "DisplayName": u"铃木园子",
+        "HeadImage": "head_tile9.JPG",
+        "TailImage": "tail_tile9.JPG",
+        "Hourglass": 1,
+    }
+]
+
+IMAGE_DETECTIVES = "detectives"
+DETECTIVE_MOUSE_ON = "detective_mouse_on.PNG"
+DETECTIVES = [
+    {
+        "Name": "kenan",
+        "DisplayName": u"江户川柯南",
+        "Image": "detective1.PNG",
+        "StartPosition": 11,
+    },
+    {
+        "Name": "xiaowulang",
+        "DisplayName": u"毛利小五郎",
+        "Image": "detective2.PNG",
+        "StartPosition": 7,
+    },
+    {
+        "Name": "pingci",
+        "DisplayName": u"服部平次",
+        "Image": "detective3.PNG",
+        "StartPosition": 3,
+    }
+]
+
+HOURGALSS = {
+    "Name": "Hourglass",
+    "DisplayName": "HOURGLASS",
+    "Image": "hourglass.PNG",
+}
+
+IMAGE_ACTION = "actions"
+ACTION_MOUSE_ON = "action_mouse_on.PNG"
+ACTION_TOKEN = [
+    [
+        {
+            "Name": "move3",
+            "Action": "MOVE3",
+            "Image": "head_action4.PNG",
+        },
+        {
+            "Name": "move2",
+            "Action": "MOVE2",
+            "Image": "tail_action4.PNG",
+        },
+    ],
+    [
+        {
+            "Name": "rotate",
+            "Action": "ROTATE",
+            "Image": "head_action3.PNG",
+        },
+        {
+            "Name": "joker",
+            "Action": "JOKER",
+            "Image": "tail_action3.PNG",
+        },
+    ],
+    [
+        {
+            "Name": "alibi",
+            "Action": "ALIBI",
+            "Image": "head_action2.PNG",
+        },
+        {
+            "Name": "move1",
+            "Action": "MOVE1",
+            "Image": "tail_action2.PNG",
+        },
+    ],
+    [
+        {
+            "Name": "rotate",
+            "Action": "ROTATE",
+            "Image": "head_action1.PNG",
+        },
+        {
+            "Name": "exchange",
+            "Action": "EXCHANGE",
+            "Image": "tail_action1.PNG",
+        },
+    ]
+]
+
+
+# todo: buttons needs some work
+BUTTONS = [
+    {
+        "Name": "",
+        "DisplayName": "",
+        "Callback": "",
+    }
+]
 buttons = [
     ("start", "START", "start_game"),
     ("confirm", "CONFIRM", "confirm"),
@@ -29,24 +198,3 @@ buttons = [
 
     ("checkpoint", "SAVE", "checkpoint"),
 ]
-actions = [
-    ("rotate", "ROTATE", 0, os.path.join(images_dir, "actions", "head_action1.PNG")),
-    ("exchange", "EXCHANGE", 0, os.path.join(images_dir, "actions", "tail_action1.PNG")),
-    ("alibi", "ALIBI", 1, os.path.join(images_dir, "actions", "head_action2.PNG")),
-    ("move1", "MOVE1", 1, os.path.join(images_dir, "actions", "tail_action2.PNG")),
-    ("rotate", "ROTATE", 2, os.path.join(images_dir, "actions", "head_action3.PNG")),
-    ("joker", "JOKER", 2, os.path.join(images_dir, "actions", "tail_action3.PNG")),
-    ("move3", "MOVE3", 3, os.path.join(images_dir, "actions", "head_action4.PNG")),
-    ("move2", "MOVE2", 3, os.path.join(images_dir, "actions", "tail_action4.PNG")),
-]
-hourglass = ("Hourglass", "HOURGLASS", os.path.join(images_dir, "hourglass.PNG"))
-
-background_image = os.path.join(images_dir, "begin.jpg")
-hourglass_image = os.path.join(images_dir, "hourglass.PNG")
-
-available_tile_locations = [(i, j) for i in range(3) for j in range(3)]
-font = "msyh.ttf"
-yellow = 128, 128, 0
-grey = 128, 128, 128
-white = 255, 255, 255
-black = 0, 0, 0

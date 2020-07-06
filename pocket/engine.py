@@ -1,12 +1,10 @@
 import sys
-import pygame
 import random
 from types import MethodType
+import platform
 from operator import xor
-# from image import *
-import constants
 
-# maybe: use pythonic getter and setter
+# todo: use pythonic getter and setter, which is @property and @p.setter
 # todo: hourglass change to 2 columns
 # todo: actions -> choose target then save
 # todo: let the street be empty before game starts
@@ -19,7 +17,8 @@ class GameEngine:
     def __init__(self, log_file="log.txt"):
         # pygame surface related
         pygame.init()
-        self.window_dimension = 1560, 920
+        # move size related to GameBoard
+        self.window_dimension = 1560, 920 # todo: detect os
         self.streets_dimension = 1060, 920
         self.side_dimension = 500, 920
         self.button_size = 100, 50
@@ -63,8 +62,8 @@ class GameEngine:
             self.hourglasses.append(Hourglass(constants.hourglass[0], constants.hourglass[1], i, constants.hourglass[2], i))
         for i in range(4):
             self.actions.append([])
-            self.actions[-1].append(ActionCards(*constants.actions[2 * i]))
-            self.actions[-1].append(ActionCards(*constants.actions[2 * i + 1]))
+            self.actions[-1].append(ActionToken(*constants.actions[2 * i]))
+            self.actions[-1].append(ActionToken(*constants.actions[2 * i + 1]))
         self.shuffle_actions()
         self.shuffle_tiles_location()
         self.tile_mouse_on_img = pygame.image.load(constants.tile_mouse_on).convert_alpha()
@@ -72,17 +71,18 @@ class GameEngine:
         self.detective_mouse_on_img = pygame.image.load(constants.detective_mouse_on).convert_alpha()
         print("initialization finish")
 
+    # move to GameBoard
     def shuffle_tiles_location(self):
         shuffled_locations = random.sample(constants.available_tile_locations, 9)
         for idx, tile in enumerate(self.tiles):
-            tile.set_location(shuffled_locations[idx])
+            tile.location = shuffled_locations[idx]
             for i in range(random.randint(0, 3)):
                 tile.rotate()
-
     def shuffle_actions(self):
         for i in range(len(self.actions)):
             self.current_actions[i] = random.random() > 0.5
 
+    # keep in engine for now
     def update_buttons(self):
         if self.game_turn is not None:
             available_buttons = ["reveal", "cancel", "confirm", "start"]
@@ -96,12 +96,15 @@ class GameEngine:
             btn_obj.set_location(idx)
             self.buttons.append(btn_obj)
 
+    # move to GameBoard
     def cleanup(self):
         self.message = None
 
+    # move to GameBoard.draw
     def is_clickable(self, click_type, click_location):
         return click_location in self.clickable.get(click_type, [])
 
+    # move to GameBoard.draw
     def draw_board(self):
         # each time redraw every pixel is slow, but not matter in this board game :)
         mouse_position = pygame.mouse.get_pos()
@@ -112,7 +115,6 @@ class GameEngine:
         else:
             self.screen.blit(self.draw_streets(), (0, 0))
             self.screen.blit(self.draw_side(hover_type, hover_location), (self.streets_dimension[0], 0))
-
     def draw_streets(self, hover_type=None, hover_location=None): # todo: should be method of each object
         # todo: do not hard code margin and padding
         surface = pygame.Surface(self.streets_dimension)
@@ -139,32 +141,31 @@ class GameEngine:
         for hourglass in self.hourglasses:
             surface.blit(hourglass.get_image(), (950, 400 + 60 * hourglass.get_location()))
         return surface
-
     def draw_side(self, hover_type=None, hover_location=None):
         surface = pygame.Surface((self.window_dimension[0] - self.streets_dimension[0], self.streets_dimension[1]))
-        font = pygame.font.Font(constants.font, 15)
+        font = pygame.font.Font(constants.FONT, 15)
         # buttons
         for button in self.buttons:
             # print(button.get_location())
             surface.blit(button.image, (self.button_size[0] * button.get_location(), 0))
         # prompts:
         if self.message:
-            surface.blit(font.render(self.message, True, constants.white, (0, 0)), (0, 350))
+            surface.blit(font.render(self.message, True, constants.WHITE, (0, 0)), (0, 350))
         # reveal jack
         if self.toggle_show_jack:
-            surface.blit(font.render("Jack is.", True, constants.white, (0, 0)), (0, 650))
+            surface.blit(font.render("Jack is.", True, constants.WHITE, (0, 0)), (0, 650))
         # every person's visibility,
         if self.game_turn is not None:
             for idx, tile in enumerate(self.tiles):
                 # make this location based on their location on map, may have translation issue
-                text = font.render("{0}: {1}可见".format(tile.display_name, " " if tile.is_seen else "不"), True, constants.white, (0, 0))
+                text = font.render("{0}: {1}可见".format(tile.display_name, " " if tile.is_seen else "不"), True, constants.WHITE, (0, 0))
                 surface.blit(text, (0, 680 + idx * 25))
         # turn and stage info
         if self.game_turn is not None:
             turn_prompt = "第{0}回合, 第{1}轮, {2}行动".format(self.game_turn,
                                                         self.num_action_chosen + 1,
                                                         "Jack " if self.game_turn % 2 else "Detective ")
-            surface.blit(font.render(turn_prompt, True, constants.white, (0, 0)), (0, 550))
+            surface.blit(font.render(turn_prompt, True, constants.WHITE, (0, 0)), (0, 550))
         # jack and detective marker number,
         # jack's status,
         # game room prompt
@@ -192,6 +193,8 @@ class GameEngine:
             # elif event.type == pygame.KEYDOWN:
             #     self.doKeyDown(event.key)
 
+    # pass absolute mouse position to GameBoard
+    # move the logic to GameBoard
     def get_mouse_location(self, mouse_position):
         """
         only street tiles, detectives, action tiles, and button area is click-able

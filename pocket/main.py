@@ -9,7 +9,7 @@ from image import *
 log_file = "log.txt"
 # direction : u, r, d, l = 0, 1, 2, 3
 # suspect: True, False = 1, 0
-# todo: select all detectives 时候的两个侦探挨着的问题
+# oldtodo: select all detectives 时候的两个侦探挨着的问题
 
 f = open(log_file, "w")
 
@@ -443,7 +443,7 @@ def start_game():
             unexcluded_people.append(p)
     suspect_people.remove(jack)
     unexcluded_people.remove(jack)
-    # update_innocent(jack, "jack")  # todo: update:innocent
+    # update_innocent(jack, "jack")  # oldtodo: update:innocent
     turn = 1
     play_count = 0
     game_processing = True
@@ -504,7 +504,7 @@ def use_card_c2(self, face):
         if not player:
             jack_flags += innocent.hourglass_num
         original = 1
-        # todo: check one innocent
+        # oldtodo: check one innocent
 
 
 def use_card_c3(self, face):
@@ -651,7 +651,7 @@ while True:
                 elif detective_win and not jack_win:
                     pygame.event.post(pygame.event.Event(DETECTIVEWIN))
                 elif detective_win and jack_win:
-                    pass  # todo: success_together
+                    pass  # oldtodo: success_together
                 jack_win = False
                 detective_win = False
             if original:
