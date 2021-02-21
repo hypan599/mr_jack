@@ -1,0 +1,125 @@
+---
+states:
+  - name: GameStart
+    buttons:
+      - start
+    transitions:
+      - trigger: start
+        dest: TurnStart
+    clickable:
+
+  - name: TurnStart
+    buttons:
+    transitions:
+      - trigger: choose_joker
+        dest: Joker
+      - trigger: choose_rotate
+        dest: Rotate
+      - trigger: choose_exchange
+        dest: Exchange
+      - trigger: choose_detectivex
+        dest: DetectiveX
+      - trigger: choose_alibi
+        dest: Alibi
+    clickable:
+      - actions: UNUSED
+
+  - name: Joker
+    buttons:
+      - cancel
+    transitions:
+      - trigger: click
+        dest: Joker2
+      - trigger: cancel
+        dest: TurnStart
+    clickable:
+      - detective: ALL
+
+  - name: Joker2
+    buttons:
+      - cancel
+    transitions:
+      - trigger: click
+        dest: ConfirmAction
+      - trigger: cancel
+        dest: Joker
+    clickable:
+      - detective: ONE_STEP_AHEAD
+
+  - name: DetectiveX
+    buttons:
+      - cancel
+    transitions:
+      - trigger: click
+        dest: DetectiveX2
+      - trigger: cancel
+        dest: TurnStart
+    clickable:
+      - detective: ALL
+
+  - name: DetectiveX2
+    buttons:
+      - cancel
+    transitions:
+      - trigger: click
+        dest: ConfirmAction
+      - trigger: cancel
+        dest: Joker
+    clickable:
+      - detective: TWO_STEP_AHEAD
+
+  - name: Alibi
+    buttons:
+    transitions:
+      - trigger: click
+        dest: ConfirmAction  # need auto trigger here
+    clickable:
+
+  - name: Rotate
+    buttons:
+      - confirm
+      - cancel
+    transitions:
+      - trigger: click
+        dest: Rotate
+      - trigger: confirm
+        dest: ConfirmAction
+      - trigger: cancel
+        dest: TurnStart
+    clickable:
+      - street: ALL/SELECTED
+
+  - name: Exchange
+    buttons:
+      - cancel
+    transitions:
+      - trigger: click
+        dest: Exchange2
+      - trigger: cancel
+        dest: TurnStart
+    clickable:
+      - street: ALL
+
+  - name: Exchange2
+    buttons:
+      - cancel
+    transitions:
+      - trigger: click
+        dest: ConfirmAction
+      - trigger: cancel
+        dest: Exchange
+    clickable:
+      - street: UNSELECTED
+
+  - name: ConfirmAction
+    buttons:
+      - cancel
+      - confirm
+    transitions:
+      - trigger: confirm
+        dest: TurnStart
+      - trigger: cancel
+        dest: TurnStart
+    clickable:
+
+initial: GameStart

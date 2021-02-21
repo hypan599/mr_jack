@@ -1,8 +1,5 @@
 import os
 
-# todo: move this to street class
-available_tile_locations = [(i, j) for i in range(3) for j in range(3)]
-
 # Font and Color
 FONT = "msyh.ttf"
 YELLOW = 128, 128, 0
@@ -17,15 +14,24 @@ BLACK = 0, 0, 0
 DIMENSIONS = {
     "SMALL": {},
     "MEDIUM": {
-        "Window": (1560, 920),
-        "BoardArea": (1060, 920),
-        "StreetTile": (1060, 920),
-        "ActionToken": (1060, 920),
-        "Detective": (1060, 920),
-        "Prompt": (1060, 920),
-        "Button": (100, 50),
+        "WindowHeight": 920,
+        "WindowWidth": 1560,
+        "TileSize": 240,
+        "TilePadding": 0,
+        "ActionSize": 100,
+        "ActionPadding": 0,
+        "ActionMargin": 10,
+        "ButtonHeight": 50,
     },
-    "LARGE": {},
+    "LARGE": {
+        "WindowHeight": 920,
+        "WindowWeight": 1560,
+        "TileSize": 240,
+        "TilePadding": 0,
+        "ActionToken": 100,
+        "ActionPadding": 0,
+        "ButtonHeight": 50,
+    },
 }
 
 IMAGE_ROOT = "images"
@@ -35,97 +41,107 @@ IMAGE_TILES = "tiles"
 TILE_MOUSE_ON = "map_mouse_on.PNG"
 TILES = [
     {
-        "Name": "aliboshi",
-        "DisplayName": u"阿笠博士",
-        "HeadImage": "head_tile1.JPG",
-        "TailImage": "tail_tile1.JPG",
-        "Hourglass": 1,
+        "name": "aliboshi",
+        "display_name": u"阿笠博士",
+        "head_image": "head_tile1.JPG",
+        "tail_image": "tail_tile1.JPG",
+        "hourglass_num": 1,
+        "wall_blocked": [2],
     },
     {
-        "Name": "xiaolan",
-        "DisplayName": u"毛利　兰",
-        "HeadImage": "head_tile2.JPG",
-        "TailImage": "tail_tile2.JPG",
-        "Hourglass": 2,
+        "name": "xiaolan",
+        "display_name": u"毛利　兰",
+        "head_image": "head_tile2.JPG",
+        "tail_image": "tail_tile2.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 2,
     },
     {
-        "Name": "jide",
-        "DisplayName": u"怪盗基德",
-        "HeadImage": "head_tile3.JPG",
-        "TailImage": "tail_tile3.JPG",
-        "Hourglass": 1,
+        "name": "jide",
+        "display_name": u"怪盗基德",
+        "head_image": "head_tile3.JPG",
+        "tail_image": "tail_tile3.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 1,
     },
     {
-        "Name": "huiyuanai",
-        "DisplayName": u"灰原　哀",
-        "HeadImage": "head_tile4.JPG",
-        "TailImage": "tail_tile4.JPG",
-        "Hourglass": 2,
+        "name": "huiyuanai",
+        "display_name": u"灰原　哀",
+        "head_image": "head_tile4.JPG",
+        "tail_image": "tail_tile4.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 2,
     },
     {
-        "Name": "mumushisan",
-        "DisplayName": u"目暮十三",
-        "HeadImage": "head_tile5.JPG",
-        "TailImage": "tail_tile5.JPG",
-        "Hourglass": 1,
+        "name": "mumushisan",
+        "display_name": u"目暮十三",
+        "head_image": "head_tile5.JPG",
+        "tail_image": "tail_tile5.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 1,
     },
     {
-        "Name": "chijingxiuyi",
-        "DisplayName": u"赤井秀一",
-        "HeadImage": "head_tile6.JPG",
-        "TailImage": "tail_tile6.JPG",
-        "Hourglass": 1,
+        "name": "chijingxiuyi",
+        "display_name": u"赤井秀一",
+        "head_image": "head_tile6.JPG",
+        "tail_image": "tail_tile6.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 1,
     },
     {
-        "Name": "beiermode",
-        "DisplayName": u"贝尔摩德",
-        "HeadImage": "head_tile7.JPG",
-        "TailImage": "tail_tile7.JPG",
-        "Hourglass": 0,
+        "name": "beiermode",
+        "display_name": u"贝尔摩德",
+        "head_image": "head_tile7.JPG",
+        "tail_image": "tail_tile7.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 0,
     },
     {
-        "Name": "yuanshanheye",
-        "DisplayName": u"远山和叶",
-        "HeadImage": "head_tile8.JPG",
-        "TailImage": "tail_tile8.JPG",
-        "Hourglass": 1,
+        "name": "yuanshanheye",
+        "display_name": u"远山和叶",
+        "head_image": "head_tile8.JPG",
+        "tail_image": "tail_tile8.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 1,
     },
     {
-        "Name": "lingmuyuanzi",
-        "DisplayName": u"铃木园子",
-        "HeadImage": "head_tile9.JPG",
-        "TailImage": "tail_tile9.JPG",
-        "Hourglass": 1,
+        "name": "lingmuyuanzi",
+        "display_name": u"铃木园子",
+        "head_image": "head_tile9.JPG",
+        "tail_image": "tail_tile9.JPG",
+        "wall_blocked": [2],
+        "hourglass_num": 1,
     }
 ]
 
 IMAGE_DETECTIVES = "detectives"
+
 DETECTIVE_MOUSE_ON = "detective_mouse_on.PNG"
 DETECTIVES = [
     {
-        "Name": "kenan",
-        "DisplayName": u"江户川柯南",
-        "Image": "detective1.PNG",
-        "StartPosition": 11,
+        "name": "kenan",
+        "display_name": u"江户川柯南",
+        "image": "detective1.PNG",
+        "start_position": 11,
     },
     {
-        "Name": "xiaowulang",
-        "DisplayName": u"毛利小五郎",
-        "Image": "detective2.PNG",
-        "StartPosition": 7,
+        "name": "xiaowulang",
+        "display_name": u"毛利小五郎",
+        "image": "detective2.PNG",
+        "start_position": 7,
     },
     {
-        "Name": "pingci",
-        "DisplayName": u"服部平次",
-        "Image": "detective3.PNG",
-        "StartPosition": 3,
+        "name": "pingci",
+        "display_name": u"服部平次",
+        "image": "detective3.PNG",
+        "start_position": 3,
     }
 ]
 
 HOURGALSS = {
-    "Name": "Hourglass",
-    "DisplayName": "HOURGLASS",
-    "Image": "hourglass.PNG",
+    "name": "Hourglass",
+    "display_name": "HOURGLASS",
+    "image": "hourglass.PNG",
 }
 
 IMAGE_ACTION = "actions"
@@ -133,60 +149,59 @@ ACTION_MOUSE_ON = "action_mouse_on.PNG"
 ACTION_TOKEN = [
     [
         {
-            "Name": "move3",
-            "Action": "MOVE3",
-            "Image": "head_action4.PNG",
+            "name": "move3",
+            "action": "MOVE3",
+            "image": "head_action4.PNG",
         },
         {
-            "Name": "move2",
-            "Action": "MOVE2",
-            "Image": "tail_action4.PNG",
-        },
-    ],
-    [
-        {
-            "Name": "rotate",
-            "Action": "ROTATE",
-            "Image": "head_action3.PNG",
-        },
-        {
-            "Name": "joker",
-            "Action": "JOKER",
-            "Image": "tail_action3.PNG",
+            "name": "move2",
+            "action": "MOVE2",
+            "image": "tail_action4.PNG",
         },
     ],
     [
         {
-            "Name": "alibi",
-            "Action": "ALIBI",
-            "Image": "head_action2.PNG",
+            "name": "rotate",
+            "action": "ROTATE",
+            "image": "head_action3.PNG",
         },
         {
-            "Name": "move1",
-            "Action": "MOVE1",
-            "Image": "tail_action2.PNG",
+            "name": "joker",
+            "action": "JOKER",
+            "image": "tail_action3.PNG",
         },
     ],
     [
         {
-            "Name": "rotate",
-            "Action": "ROTATE",
-            "Image": "head_action1.PNG",
+            "name": "alibi",
+            "action": "ALIBI",
+            "image": "head_action2.PNG",
         },
         {
-            "Name": "exchange",
-            "Action": "EXCHANGE",
-            "Image": "tail_action1.PNG",
+            "name": "move1",
+            "action": "MOVE1",
+            "image": "tail_action2.PNG",
+        },
+    ],
+    [
+        {
+            "name": "rotate",
+            "action": "ROTATE",
+            "image": "head_action1.PNG",
+        },
+        {
+            "name": "exchange",
+            "action": "EXCHANGE",
+            "image": "tail_action1.PNG",
         },
     ]
 ]
 
-
 # todo: buttons needs some work
 BUTTONS = [
     {
-        "Name": "",
-        "DisplayName": "",
+        "name": "",
+        "display_name": "",
         "Callback": "",
     }
 ]

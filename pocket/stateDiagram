@@ -1,0 +1,59 @@
+@startuml
+hide empty description
+
+TurnStart : selectables : 4 actions
+TurnStart : buttons : ?
+
+TurnStart --> Joker : select
+Joker : selectables: detective
+Joker : button: reset
+Joker : button: cancel
+Joker --> TurnStart : cancel
+Joker --> ConfirmAction : reset
+Joker --> Joker2 : click
+
+Joker2 : selectables : current selection + 1
+Joker2 : button: cancel
+Joker2 --> Joker : cancel
+Joker2 --> ConfirmAction : click
+
+TurnStart --> DetectiveX : select
+DetectiveX : selectable: detective
+DetectiveX : button: cancel
+DetectiveX --> Detective2 : click
+
+Detective2 : selectables : current selection + 1/2
+Detective2 : button: cancel
+Detective2 --> DetectiveX : cancel
+Detective2 --> ConfirmAction : click
+
+TurnStart --> Alibi : select
+Alibi : selectable : none
+Alibi --> ConfirmAction : auto
+
+TurnStart --> Rotate : select
+Rotate : selectable: streets
+Rotate : button: cancel
+Rotate : button: confirm
+Rotate --> ConfirmAction : confirm
+Rotate --> TurnStart : cancel
+Rotate --> Rotate : click
+
+TurnStart --> Exchange : select
+Exchange : selectable: streets
+Exchange : button: cancel
+Exchange --> Exchange2 : click
+
+Exchange2 : selectable: remaining streets
+Exchange2 : button: cancel
+Exchange2 --> ConfirmAction : click
+Exchange2 --> Exchange : cancel
+
+
+ConfirmAction : execute action
+ConfirmAction --> TurnEnd: auto
+
+TurnEnd : selectables : remaining actions
+
+
+@enduml

@@ -1,0 +1,7 @@
+Pillow==7.2.0
+pygame==2.0.0.dev6
+pygame-menu==3.1.4
+pyperclip==1.8.0
+PyYAML==5.3.1
+six==1.15.0
+transitions==0.8.2
